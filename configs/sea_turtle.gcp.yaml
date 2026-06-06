@@ -1,0 +1,30 @@
+dataset:
+  name: sea_turtle
+  root: data/turtles-data/data
+  metadata_csv: metadata_splits.csv
+  split_column: split_open
+  gallery_split: train
+  query_split: test
+  path_column: file_name
+  identity_column: identity
+
+model:
+  backbone: efficientnet_v2_m
+  embedding_dim: 256
+  image_size: 384
+  checkpoint: gs://wildlifereidentification/sea_turtle/models/v1/best.pt
+
+index:
+  top_k: 5
+  metric: cosine
+
+paths:
+  artifacts: gs://wildlifereidentification/sea_turtle
+
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 1.0e-5
+  margin: 1.0
+  max_per_category: 20
+  seed: 71

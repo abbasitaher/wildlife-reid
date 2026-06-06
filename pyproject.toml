@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wildlife-reid"
+version = "0.1.0"
+description = "Embedding-based wildlife re-identification with FAISS retrieval"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "numpy>=1.21",
+    "pandas>=2.0",
+    "Pillow>=9.0",
+    "tqdm>=4.64",
+    "PyYAML>=6.0",
+    "faiss-cpu>=1.7.4",
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.23",
+    "python-multipart>=0.0.6",
+]
+
+[project.optional-dependencies]
+gpu = ["faiss-gpu>=1.7.4"]
+gcp = ["google-cloud-storage>=2.10"]
+dev = [
+    "ruff>=0.5",
+    "pytest>=7.4",
+    "mypy>=1.8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["wildlife_reid*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "scripts", "app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Scripts adjust sys.path before importing the package (entry-point pattern).
+"scripts/*" = ["E402"]
+# FastAPI uses callables (File(...), Query(...)) as argument defaults by design.
+"app/api.py" = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+explicit_package_bases = true
+mypy_path = "src"

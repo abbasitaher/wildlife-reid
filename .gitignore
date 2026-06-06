@@ -1,0 +1,28 @@
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Generated artifacts and model weights (keep out of GitHub)
+/artifacts/
+/models/
+/resources/
+/output/
+
+*.pth
+*.pt
+*.pkl
+
+# Personal notes — not part of the public repo
+/docs/
+
+# Local datasets (root only — do not use bare "data/" or it ignores src/wildlife_reid/data/)
+/data/
+/turtles-data/
+
+legacy/model-api/__pycache__/

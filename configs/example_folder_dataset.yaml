@@ -1,0 +1,35 @@
+# Example config for a dataset organized as one folder per individual:
+#
+#   <root>/<source>/<identity>/<image>.jpg
+#
+# Use this layout when you do not have a metadata CSV. Each subfolder name under
+# a source directory is treated as an individual's identity.
+
+dataset:
+  name: example
+  root: data/example
+  datasets:
+    - source_a
+    - source_b
+  layout: folder_per_identity
+
+model:
+  backbone: efficientnet_v2_m
+  embedding_dim: 256
+  image_size: 384
+  checkpoint: null
+
+index:
+  top_k: 5
+  metric: cosine
+
+paths:
+  artifacts: artifacts/example
+
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 1.0e-5
+  margin: 1.0
+  max_per_category: 20
+  seed: 71

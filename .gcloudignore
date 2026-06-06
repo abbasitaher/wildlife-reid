@@ -1,0 +1,19 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+
+# Local-only dirs at repo root (leading / avoids matching src/wildlife_reid/data|models)
+/artifacts/
+/models/
+/resources/
+/output/
+/legacy/
+/notebooks/
+/docs/
+/data/
+/turtles-data/
