@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import random
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pandas as pd
@@ -62,8 +63,34 @@ def _load_folder_records(config: AppConfig) -> list[ImageRecord]:
 
 def load_records(config: AppConfig) -> list[ImageRecord]:
     if config.dataset.layout == "folder_per_identity":
-        return _load_folder_records(config)
-    return _load_csv_records(config)
+        records = _load_folder_records(config)
+    else:
+        records = _load_csv_records(config)
+    return assign_default_splits(records, config)
+
+
+def assign_default_splits(records: list[ImageRecord], config: AppConfig) -> list[ImageRecord]:
+    """Assign train/test splits for folder datasets that have no CSV split column."""
+    if not config.dataset.auto_split:
+        return records
+    if any(record.split is not None for record in records):
+        return records
+    if config.dataset.layout != "folder_per_identity":
+        return records
+
+    rng = random.Random(config.training.seed)
+    grouped = group_by_identity(records)
+    updated: list[ImageRecord] = []
+    for items in grouped.values():
+        paths = sorted(items, key=lambda record: str(record.path))
+        if len(paths) >= 2:
+            query_idx = rng.randrange(len(paths))
+            for idx, record in enumerate(paths):
+                split = config.dataset.query_split if idx == query_idx else config.dataset.gallery_split
+                updated.append(replace(record, split=split))
+        else:
+            updated.extend(replace(record, split=config.dataset.gallery_split) for record in paths)
+    return updated
 
 
 def filter_records(records: list[ImageRecord], split: str | None = None) -> list[ImageRecord]:

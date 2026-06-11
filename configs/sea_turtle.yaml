@@ -9,10 +9,11 @@ dataset:
   identity_column: identity
 
 model:
-  backbone: efficientnet_v2_m
-  embedding_dim: 256
-  image_size: 384
+  backbone: megadescriptor_l_384
+  embedding_dim: null
+  image_size: null
   checkpoint: artifacts/sea_turtle/checkpoints/best.pt
+  pretrained: true
 
 index:
   top_k: 5
@@ -22,9 +23,12 @@ paths:
   artifacts: artifacts/sea_turtle
 
 training:
-  batch_size: 32
-  epochs: 50
-  learning_rate: 1.0e-5
-  margin: 1.0
+  batch_size: 16
+  epochs: 30
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+  arcface_margin: 0.5
+  arcface_scale: 64.0
   max_per_category: 20
   seed: 71
+  val_ratio: 0.1

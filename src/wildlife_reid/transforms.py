@@ -3,6 +3,8 @@ from __future__ import annotations
 import torchvision.transforms as T
 from PIL import Image
 
+from wildlife_reid.models.backbone import BackboneSpec, get_backbone_spec
+
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
@@ -20,19 +22,28 @@ def pad_to_square(image: Image.Image) -> Image.Image:
     return T.functional.pad(image, padding, fill=0, padding_mode="reflect")
 
 
-def build_eval_transform(image_size: int) -> T.Compose:
-    return T.Compose(
+def _preprocess_steps(spec: BackboneSpec, image_size: int | None = None) -> list:
+    size = image_size or spec.image_size
+    steps: list = []
+    if spec.pad_square:
+        steps.append(T.Lambda(pad_to_square))
+    steps.extend(
         [
-            T.Lambda(pad_to_square),
-            T.Resize((image_size, image_size)),
+            T.Resize((size, size)),
             T.ToTensor(),
-            T.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+            T.Normalize(mean=spec.normalize_mean, std=spec.normalize_std),
         ]
     )
+    return steps
 
 
-def apply_preprocess(image: Image.Image, image_size: int):
-    return build_eval_transform(image_size)(image)
+def build_eval_transform(backbone: str, image_size: int | None = None) -> T.Compose:
+    spec = get_backbone_spec(backbone)
+    return T.Compose(_preprocess_steps(spec, image_size))
+
+
+def apply_preprocess(image: Image.Image, backbone: str, image_size: int | None = None):
+    return build_eval_transform(backbone, image_size)(image)
 
 
 def apply_augmentation(image: Image.Image) -> Image.Image:

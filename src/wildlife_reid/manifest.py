@@ -6,6 +6,8 @@ import re
 from typing import Any
 
 from wildlife_reid.config import AppConfig, extract_model_version
+from wildlife_reid.models.backbone import get_backbone_spec
+from wildlife_reid.models.encoder import resolve_embedding_dim
 from wildlife_reid.storage import exists, join_uri, read_json
 
 _MANIFEST_NAME = "manifest.json"
@@ -27,16 +29,19 @@ def validate_index_manifest(manifest: dict[str, Any], config: AppConfig) -> None
     if expected_version and manifest_version != expected_version:
         errors.append(f"model_version: manifest={manifest_version!r} config={expected_version!r}")
 
+    expected_embedding_dim = resolve_embedding_dim(config.model.backbone, config.model.embedding_dim)
+    expected_image_size = config.model.image_size or get_backbone_spec(config.model.backbone).image_size
+
     if manifest.get("backbone") != config.model.backbone:
         errors.append(f"backbone: manifest={manifest.get('backbone')!r} config={config.model.backbone!r}")
 
-    if manifest.get("embedding_dim") != config.model.embedding_dim:
+    if manifest.get("embedding_dim") != expected_embedding_dim:
         errors.append(
-            f"embedding_dim: manifest={manifest.get('embedding_dim')!r} config={config.model.embedding_dim!r}"
+            f"embedding_dim: manifest={manifest.get('embedding_dim')!r} config={expected_embedding_dim!r}"
         )
 
-    if manifest.get("image_size") != config.model.image_size:
-        errors.append(f"image_size: manifest={manifest.get('image_size')!r} config={config.model.image_size!r}")
+    if manifest.get("image_size") != expected_image_size:
+        errors.append(f"image_size: manifest={manifest.get('image_size')!r} config={expected_image_size!r}")
 
     if manifest.get("index_metric") != config.index.metric:
         errors.append(f"index_metric: manifest={manifest.get('index_metric')!r} config={config.index.metric!r}")

@@ -30,14 +30,16 @@ class DatasetConfig:
     identity_column: str = "identity"
     datasets: list[str] = field(default_factory=list)
     layout: str = "csv_metadata"
+    auto_split: bool = True
 
 
 @dataclass
 class ModelConfig:
-    backbone: str = "efficientnet_v2_m"
-    embedding_dim: int = 256
-    image_size: int = 384
+    backbone: str = "megadescriptor_l_384"
+    embedding_dim: int | None = None
+    image_size: int | None = None
     checkpoint: str | None = None
+    pretrained: bool = True
 
 
 @dataclass
@@ -48,12 +50,15 @@ class IndexConfig:
 
 @dataclass
 class TrainingConfig:
-    batch_size: int = 32
-    epochs: int = 50
-    learning_rate: float = 1e-5
-    margin: float = 1.0
+    batch_size: int = 16
+    epochs: int = 30
+    learning_rate: float = 1e-4
+    weight_decay: float = 1e-4
+    arcface_margin: float = 0.5
+    arcface_scale: float = 64.0
     max_per_category: int = 20
     seed: int = 71
+    val_ratio: float = 0.1
 
 
 @dataclass
@@ -92,6 +97,7 @@ def _build_dataset(raw: dict[str, Any]) -> DatasetConfig:
         identity_column=raw.get("identity_column", "identity"),
         datasets=raw.get("datasets", []),
         layout=raw.get("layout", "csv_metadata" if raw.get("metadata_csv") else "folder_per_identity"),
+        auto_split=raw.get("auto_split", True),
     )
 
 

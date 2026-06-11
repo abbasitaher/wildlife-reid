@@ -12,13 +12,10 @@ from wildlife_reid.training.train_arcface import train_arcface
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Deprecated alias for train_arcface.py — triplet training was replaced by ArcFace."
-    )
+    parser = argparse.ArgumentParser(description="Fine-tune MegaDescriptor with ArcFace loss.")
     parser.add_argument("--config", default="configs/sea_turtle.yaml")
     args = parser.parse_args()
 
-    print("Note: triplet training was replaced by ArcFace. Running train_arcface instead.")
     config = load_config(args.config)
     checkpoint = train_arcface(config)
     print(f"Best checkpoint saved to {checkpoint}")

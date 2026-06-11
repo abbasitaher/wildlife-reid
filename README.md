@@ -32,7 +32,7 @@ used in retrieval-augmented generation (RAG), applied to images.
 Query image
      │
      ▼
-Embedding encoder  (EfficientNetV2-M backbone + projection head → 256-d, L2-normalized)
+Embedding encoder  (MegaDescriptor-L-384 → 1536-d, L2-normalized)
      │
      ▼
 FAISS vector index  (gallery embeddings, cosine similarity)
@@ -55,14 +55,14 @@ src/wildlife_reid/    Core library
   ├─ config.py          typed configuration
   ├─ storage.py         local / Cloud Storage path abstraction
   ├─ transforms.py      preprocessing + augmentation
-  ├─ data/              dataset cataloguing, triplet mining, datasets
-  ├─ models/            embedding encoder
+  ├─ data/              dataset cataloguing, identity datasets, folder/CSV loaders
+  ├─ models/            MegaDescriptor encoder + ArcFace head
   ├─ embedding.py       model loading + inference service
   ├─ index.py           FAISS vector index
   ├─ retrieval.py       build-gallery / search orchestration
   ├─ evaluation.py      top-1 / top-5 retrieval accuracy
-  └─ training/          triplet-loss fine-tuning
-scripts/              CLI entry points (build_index, search, evaluate, train_triplet)
+  └─ training/          ArcFace fine-tuning
+scripts/              CLI entry points (build_index, search, evaluate, train_arcface)
 app/                  FastAPI service
 deploy/               Cloud Run deploy + artifact upload scripts
 tests/               unit tests (network-free, GPU-free)
@@ -85,6 +85,8 @@ Requires Python 3.10+.
 
 ## Dataset
 
+### Sea turtle (CSV + splits)
+
 Point `dataset.root` in `configs/sea_turtle.yaml` at your dataset directory. The
 expected SeaTurtleID2022 layout is:
 
@@ -94,13 +96,23 @@ expected SeaTurtleID2022 layout is:
   images/<identity>/<image>.jpg
 ```
 
-`file_name` entries in the CSV are paths relative to `dataset.root` (e.g.
-`images/t001/abc.JPG`). The default config uses a relative `data/` location; edit
-it to match where your dataset lives.
+### Frog (folder per individual)
 
-For datasets organized as one folder per individual, use the
-`folder_per_identity` layout (see `configs/example_folder_dataset.yaml`) — the
-commands are identical, only the config changes.
+Point `configs/frog.yaml` at your frog image tree:
+
+```text
+data/frogdatasets/
+  nfl/<frog_id>/<image>.jpg
+  evz/<frog_id>/<image>.jpg
+  abc/<frog_id>/<image>.jpg
+  vancouver/<frog_id>/<image>.jpg
+```
+
+Identities are namespaced as `<source>/<frog_id>`. When no CSV split column exists,
+one image per individual is held out automatically for evaluation (`auto_split: true`).
+
+For other folder-based datasets, see `configs/example_folder_dataset.yaml` — only
+the config changes.
 
 ## Usage
 
@@ -144,19 +156,25 @@ curl -X POST "http://localhost:8080/search?top_k=5" -F "file=@path/to/query.jpg"
 ### Fine-tune the encoder (optional)
 
 ```bash
-python scripts/train_triplet.py --config configs/sea_turtle.yaml
+# Sea turtle
+python scripts/train_arcface.py --config configs/sea_turtle.yaml
+
+# Frog
+python scripts/train_arcface.py --config configs/frog.yaml
 ```
 
-Trains the embedding model with triplet loss and saves the best checkpoint. Set
-`model.checkpoint` in the config to the resulting `best.pt` to use it for indexing
-and serving.
+Fine-tunes [MegaDescriptor-L-384](https://huggingface.co/BVRA/MegaDescriptor-L-384)
+with ArcFace loss and saves the best encoder checkpoint. Set `model.checkpoint` in
+the config to the resulting `best.pt` to use it for indexing and serving.
 
 ## Design notes
 
 - **Embeddings, not classification** — open-set identification by nearest-neighbor
   search; enroll new individuals without retraining.
-- **EfficientNetV2-M backbone** with a projection head into a 256-d embedding;
-  the backbone is a registry lookup, so swapping it is a one-line config change.
+- **MegaDescriptor-L-384 backbone** — wildlife re-ID foundation model (Swin-L, 1536-d
+  embeddings); also supports legacy EfficientNet checkpoints via `backbone: efficientnet_v2_m`.
+- **ArcFace fine-tuning** — angular-margin identity loss; at inference only the
+  L2-normalized embedding is used for cosine search.
 - **Cosine similarity on L2-normalized vectors** — inner product equals cosine
   similarity, giving interpretable scores in `[-1, 1]`.
 - **FAISS flat (exact) index** — exact search with full recall at low-thousands
@@ -181,8 +199,8 @@ pip install -e ".[gcp]"
 ./deploy/deploy.sh
 ```
 
-The container bakes the ImageNet backbone weights into the image (so cold starts
-skip the download) and loads the gallery index from Cloud Storage at startup.
+The container caches MegaDescriptor weights in the image and loads the gallery
+index from Cloud Storage at startup.
 Project, bucket, and region defaults live in `configs/gcp.env` and the `deploy/`
 scripts; override them via environment variables to target your own project.
 

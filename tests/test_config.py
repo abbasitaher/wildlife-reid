@@ -1,9 +1,10 @@
 import textwrap
 
 from wildlife_reid.config import load_config
+from wildlife_reid.models.backbone import get_backbone_spec
 
 
-def _write_config(tmp_path, artifacts: str) -> str:
+def _write_config(tmp_path, artifacts: str, backbone: str = "megadescriptor_l_384") -> str:
     content = textwrap.dedent(
         f"""
         dataset:
@@ -14,22 +15,26 @@ def _write_config(tmp_path, artifacts: str) -> str:
           gallery_split: train
           query_split: test
         model:
-          backbone: efficientnet_v2_m
-          embedding_dim: 256
-          image_size: 384
+          backbone: {backbone}
+          embedding_dim: null
+          image_size: null
           checkpoint: null
+          pretrained: false
         index:
           top_k: 5
           metric: cosine
         paths:
           artifacts: {artifacts}
         training:
-          batch_size: 32
+          batch_size: 16
           epochs: 10
-          learning_rate: 1.0e-5
-          margin: 1.0
+          learning_rate: 1.0e-4
+          weight_decay: 1.0e-4
+          arcface_margin: 0.5
+          arcface_scale: 64.0
           max_per_category: 20
           seed: 71
+          val_ratio: 0.1
         """
     )
     path = tmp_path / "cfg.yaml"
@@ -40,8 +45,10 @@ def _write_config(tmp_path, artifacts: str) -> str:
 def test_load_config_fields(tmp_path):
     config = load_config(_write_config(tmp_path, "artifacts/sea_turtle"))
     assert config.dataset.name == "sea_turtle"
-    assert config.model.embedding_dim == 256
+    assert config.model.backbone == "megadescriptor_l_384"
+    assert config.model.embedding_dim is None
     assert config.index.top_k == 5
+    assert config.training.arcface_margin == 0.5
     assert config.training.seed == 71
 
 
@@ -63,7 +70,7 @@ def test_index_dir_remote_versioned(tmp_path):
           name: sea_turtle
           root: /data/turtles
         model:
-          backbone: efficientnet_v2_m
+          backbone: megadescriptor_l_384
           checkpoint: gs://bucket/sea_turtle/models/v2/best.pt
         paths:
           artifacts: gs://bucket/sea_turtle
@@ -73,3 +80,9 @@ def test_index_dir_remote_versioned(tmp_path):
     path.write_text(content)
     config = load_config(str(path))
     assert config.index_dir == "gs://bucket/sea_turtle/index/v2"
+
+
+def test_backbone_spec_defaults():
+    spec = get_backbone_spec("megadescriptor_l_384")
+    assert spec.image_size == 384
+    assert spec.feature_dim == 1536

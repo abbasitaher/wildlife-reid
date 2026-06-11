@@ -19,11 +19,11 @@ COPY app ./app
 
 RUN pip install --no-cache-dir ".[gcp]"
 
-# Bake ImageNet weights into the image so cold starts skip the ~208 MB download.
+# Cache MegaDescriptor weights in the image so cold starts skip the Hugging Face download.
 RUN python -c "\
-from torchvision import models; \
-models.efficientnet_v2_m(weights=models.EfficientNet_V2_M_Weights.IMAGENET1K_V1); \
-print('EfficientNetV2-M weights cached under', __import__('os').environ['TORCH_HOME'])"
+import timm; \
+timm.create_model('hf-hub:BVRA/MegaDescriptor-L-384', pretrained=True, num_classes=0); \
+print('MegaDescriptor-L-384 weights cached')"
 
 EXPOSE 8080
 

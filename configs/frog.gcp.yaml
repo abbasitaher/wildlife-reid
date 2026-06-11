@@ -1,18 +1,21 @@
 dataset:
-  name: sea_turtle
-  root: data/turtles-data/data
-  metadata_csv: metadata_splits.csv
-  split_column: split_open
+  name: frog
+  root: data/frogdatasets
+  datasets:
+    - nfl
+    - evz
+    - abc
+    - vancouver
+  layout: folder_per_identity
+  auto_split: true
   gallery_split: train
   query_split: test
-  path_column: file_name
-  identity_column: identity
 
 model:
   backbone: megadescriptor_l_384
   embedding_dim: null
   image_size: null
-  checkpoint: gs://wildlifereidentification/sea_turtle/models/v1/best.pt
+  checkpoint: gs://wildlifereidentification/frog/models/v1/best.pt
   pretrained: true
 
 index:
@@ -20,7 +23,7 @@ index:
   metric: cosine
 
 paths:
-  artifacts: gs://wildlifereidentification/sea_turtle
+  artifacts: gs://wildlifereidentification/frog
 
 training:
   batch_size: 16

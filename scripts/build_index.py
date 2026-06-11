@@ -10,6 +10,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from wildlife_reid import __version__
 from wildlife_reid.config import extract_model_version, load_config
+from wildlife_reid.models.backbone import get_backbone_spec
+from wildlife_reid.models.encoder import resolve_embedding_dim
 from wildlife_reid.retrieval import RetrievalService
 from wildlife_reid.storage import join_uri, write_json
 
@@ -36,8 +38,8 @@ def main() -> None:
         "gallery_split": config.dataset.gallery_split,
         "gallery_size": len(index.items),
         "backbone": config.model.backbone,
-        "embedding_dim": config.model.embedding_dim,
-        "image_size": config.model.image_size,
+        "embedding_dim": resolve_embedding_dim(config.model.backbone, config.model.embedding_dim),
+        "image_size": config.model.image_size or get_backbone_spec(config.model.backbone).image_size,
         "checkpoint": config.model.checkpoint,
         "model_version": extract_model_version(config.model.checkpoint),
         "index_metric": config.index.metric,

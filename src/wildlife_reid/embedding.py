@@ -7,7 +7,8 @@ import torch
 from PIL import Image
 
 from wildlife_reid.config import AppConfig
-from wildlife_reid.models.encoder import EmbeddingEncoder, build_encoder
+from wildlife_reid.models.backbone import get_backbone_spec
+from wildlife_reid.models.encoder import EmbeddingEncoder, build_encoder, resolve_embedding_dim
 from wildlife_reid.storage import download_file, is_remote
 from wildlife_reid.transforms import build_eval_transform
 
@@ -17,12 +18,15 @@ class EmbeddingService:
         self.config = config
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.model = self._load_model()
-        self.transform = build_eval_transform(config.model.image_size)
+        image_size = config.model.image_size or get_backbone_spec(config.model.backbone).image_size
+        self.transform = build_eval_transform(config.model.backbone, image_size)
+        self.embedding_dim = resolve_embedding_dim(config.model.backbone, config.model.embedding_dim)
 
     def _load_model(self) -> EmbeddingEncoder:
         model = build_encoder(
             backbone=self.config.model.backbone,
             embedding_dim=self.config.model.embedding_dim,
+            pretrained=self.config.model.pretrained,
         )
         checkpoint = self.config.model.checkpoint
         if checkpoint:
@@ -67,4 +71,4 @@ class EmbeddingService:
             tensor = torch.stack(batch).to(self.device)
             vectors.append(self.model(tensor).cpu())
 
-        return torch.cat(vectors, dim=0) if vectors else torch.empty((0, self.config.model.embedding_dim))
+        return torch.cat(vectors, dim=0) if vectors else torch.empty((0, self.embedding_dim))

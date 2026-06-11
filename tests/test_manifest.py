@@ -8,9 +8,9 @@ def _config(checkpoint: str | None = "gs://bucket/sea_turtle/models/v1/best.pt")
     return AppConfig(
         dataset=DatasetConfig(name="sea_turtle", root="/data"),
         model=ModelConfig(
-            backbone="efficientnet_v2_m",
-            embedding_dim=256,
-            image_size=384,
+            backbone="megadescriptor_l_384",
+            embedding_dim=None,
+            image_size=None,
             checkpoint=checkpoint,
         ),
         index=IndexConfig(top_k=5, metric="cosine"),
@@ -21,8 +21,8 @@ def _config(checkpoint: str | None = "gs://bucket/sea_turtle/models/v1/best.pt")
 
 def _manifest(**overrides) -> dict:
     base = {
-        "backbone": "efficientnet_v2_m",
-        "embedding_dim": 256,
+        "backbone": "megadescriptor_l_384",
+        "embedding_dim": 1536,
         "image_size": 384,
         "index_metric": "cosine",
         "checkpoint": "gs://bucket/sea_turtle/models/v1/best.pt",
@@ -39,7 +39,7 @@ def test_validate_index_manifest_ok():
 
 def test_validate_index_manifest_rejects_backbone_mismatch():
     with pytest.raises(ValueError, match="backbone"):
-        validate_index_manifest(_manifest(backbone="convnext_tiny"), _config())
+        validate_index_manifest(_manifest(backbone="megadescriptor_t_224"), _config())
 
 
 def test_validate_index_manifest_rejects_version_mismatch():
